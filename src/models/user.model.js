@@ -30,6 +30,9 @@ const userSchema = new mongoose.Schema(
      type : String,
      
     },
+    phoneNumber :{
+      type : Number
+    },
       projectManager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"

@@ -285,9 +285,9 @@ export const deleteUser = async (req, res) => {
         });
         }
     };
-export const registerUser = async (req, res) => {
+export const addUser = async (req, res) => {
       try {
-        const { userName, email, password, accountType, } = req.body;
+        const { userName, email, password,PhoneNumber, accountType, } = req.body;
     
         if (!userName || !email || !password ) {
           return res.status(400).json({
@@ -305,38 +305,26 @@ export const registerUser = async (req, res) => {
           });
         }
     
-        // Create user (password will be hashed in pre-save hook)
-        const user = new User({ userName,email, password, accountType });
+      
+        const user = new User({ userName,email, password, accountType,PhoneNumber });
         await user.save();
     
-        // Generate JWT
-        const token = jwt.sign(
-          { id: user._id, accountType: user.accountType },
-          process.env.JWT_SECRET,
-          { expiresIn: '1d' }
-        );
-        user.token = token;
-        await user.save();
+
     
-       res.status(201).cookie("token", token, {
-      httpOnly: true,
-  secure: false,   // true only in HTTPS
-  sameSite: "lax",// change to true in production (HTTPS)
-      maxAge: 3 * 24 * 60 * 60 * 1000,
-    }).json({
+       res.status(201).json({
           success: true,
-          message: 'User created successfully',
+          message: 'User added successfully',
           user: {
             id: user._id,
             userName: user.userName,
-            
+            PhoneNumber:user.PhoneNumber,
             email: user.email,
             accountType: user.accountType,
             token: user.token,
           },
         });
       } catch (error) {
-        console.error('Signup Error:', error);
+        console.error(' Error while adding the user', error);
         res.status(500).json({
           success: false,
           message: 'Server Error',

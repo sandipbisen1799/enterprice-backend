@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, login, logout ,getAllUsers,getUserById,updateUser,deleteUser,getAllUserData,blockUser,unblockUser } from "../controllers/auth.controller.js";
+import { signup, login, logout ,getAllUsers,getUserById,updateUser,deleteUser,getAllUserData,blockUser,unblockUser, addUser } from "../controllers/auth.controller.js";
 import {  createProjectManager,deleteProjectManager,updateProjectManager, getProjectmanagerbyId ,getProjectmanager } from "../controllers/admin.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/authorise.js";
@@ -31,6 +31,7 @@ router.route('/:_id')
 .get(auth, authorize( "admin"), getUserById)
 .put(auth, authorize( "admin"), updateUser)
 .delete(auth, authorize("admin"), deleteUser);
+router.post('/add',auth, authorize('admin'),addUser)
 
 router.get('/admin/projectmanager', auth, authorize("admin"),getProjectmanager);
 router.post('/admin/createProjectmanager', auth ,authorize('admin'),createProjectManager)
