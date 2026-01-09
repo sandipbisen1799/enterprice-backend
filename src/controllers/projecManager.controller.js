@@ -1,0 +1,236 @@
+import User from "../models/user.model.js";
+import Project from "../models/project.model.js";
+import mongoose from "mongoose";
+import { use } from "react";
+export const getMyTeamMembers = async (req, res) => {
+  try {
+    const projectManagerId = req.user._id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 2;
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      User.find({
+        accountType: "teamMember",
+        projectManager: projectManagerId,
+      })
+        .select("-password")
+        .skip(skip)
+        .limit(limit),
+
+      User.countDocuments({
+        accountType: "teamMember",
+        projectManager: projectManagerId,
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      users,
+      pagination: {
+        total,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+export const getMyAssignedProjects = async (req, res) => {
+  try {
+    if (req.user.accountType !== "projectManager") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    const projects = await Project.find({
+      projectManager: req.user._id,
+    })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      projects,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+export const createTeamMember = async (req, res) => {
+  try {
+    const { projectManagerId } = req.params;
+    if (!projectManagerId) {
+      return res.status(400).json({
+        success: false,
+        message: "project Manager is missing",
+      });
+    }
+    const { email, userName, password } = req.body;
+    if (!email || !userName || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "all field are required",
+      });
+    }
+    const findUser = await User.findOne({ email });
+    if (findUser) {
+      return res.status(400).json({
+        success: false,
+        message: "user allready exist",
+      });
+    }
+    if (!mongoose.Types.ObjectId.isValid(projectManagerId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid project manager ID",
+      });
+    }
+
+    const accountType = "teamMember";
+    const user = await User.create({
+      email,
+      userName,
+      password,
+      accountType,
+      projectManager: projectManagerId,
+    });
+
+    await user.save();
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "user is missing",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "teamMember created successfuly",
+      user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "something went wrong",
+    });
+  }
+};
+export const updateTeamMember = async (req, res) => {
+  try {
+    const { teamMemberId, projectManagerId } = req.params;
+    const { userName, email, password } = req.body;
+    if (!teamMemberId || !projectManagerId) {
+      return res.status(400).json({
+        success: false,
+        message: "id is missing",
+      });
+    }
+    const user = await User.findById(teamMemberId);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "user not found",
+      });
+    }
+    const projectManager = user.projectManager.toString();
+    const compare = projectManager === projectManagerId;
+    if (!compare) {
+      return res.status(400).json({
+        success: false,
+        message: "wrong projectManager ",
+      });
+    }
+    console.log("vfddfdd", teamMemberId);
+    const updateduser = await User.findByIdAndUpdate(
+      teamMemberId,
+      {
+        userName,
+        email,
+        password,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    if (!updateduser) {
+      return res.status(400).json({
+        success: false,
+        message: "error in updating the user ",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "user updating successfull ",
+      updateduser,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "error while updating the team member",
+    });
+  }
+};
+ export const deleteTeamMember =async(req,res)=>{
+  try {
+
+      const { teamMemberId, projectManagerId } = req.params;
+   
+    if (!teamMemberId || !projectManagerId) {
+      return res.status(400).json({
+        success: false,
+        message: "id is missing",
+      });
+    }
+    const user = await User.findById(teamMemberId);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "user not found",
+      });
+    }
+    const projectManager = user.projectManager.toString();
+    const compare = projectManager === projectManagerId;
+    if (!compare) {
+      return res.status(400).json({
+        success: false,
+        message: "wrong projectManager ",
+      });
+    }
+    const deletedUser = await User.findByIdAndDelete(teamMemberId, {
+        new: true,
+        runValidators: true,
+      });
+    if(!deletedUser){
+      return res.status(400).json({
+        success:false,
+        message:"user is not deleted"
+      })
+    }
+    return res.status(200).json({
+      success:true,
+      message:'user is deleted successfully'
+    })
+
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      success:false,
+      message:"somrthing went wrong while deleting the user"
+    })
+  }
+}
