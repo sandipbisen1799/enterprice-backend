@@ -1,19 +1,25 @@
 import env from './config/env.js';
 import app from './index.js'
-import {connectwithdb,closedb} from "./config/db.js";
-import { handleCrash } from './config/gracefulShutdown.js';
+import {connectwithdb} from "./config/db.js";
+
 import http from 'http'
 const PORT = env.PORT ||  8000;
 
 
 const server = http.createServer(app);
 
-const startServer = () => {
-  server.listen(PORT, () =>
-    console.log(`Server running on port ${PORT}`)
-  )
-
-  };
+const startServer = (port = PORT) => {
+  server.listen(port, () =>
+    console.log(`Server running on port ${port}`)
+  ).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is busy, trying ${Number(port) + 1}...`);
+      startServer(Number(port) + 1);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+};
 
 
 const shutdown = async (signal) => {
@@ -21,7 +27,6 @@ const shutdown = async (signal) => {
 
   server.close(async () => {
     console.log('HTTP server closed');
-    await closedb();
     process.exit(0);
   });
 
@@ -37,7 +42,6 @@ process.on('SIGTERM', shutdown);
 process.on('SIGQUIT', shutdown);
 const bootstrap = async () => {
   try {
-    handleCrash();
     await connectwithdb();
     startServer();
   } catch (error) {

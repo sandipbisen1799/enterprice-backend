@@ -180,24 +180,58 @@ export const logout =  async(req, res) => {
   });
 };
 
-export const getAllUsers= async(req,res)=>{
- try {
-   const users= await User.find();
-   console.log(users) ;
-   return res.status(200).json({
-     success:true,
-     message:"All user is fatched",
-     users
-   })
- } catch (error) {
-  return res.status(500).json({
-    success:false,
-    message:"error while getting all the users"
+// export const getAllUservs= async(req,res)=>{
+//  try {
+//    const users= await User.find();
+//    console.log(users) ;
+//    return res.status(200).json({
+//      success:true,
+//      message:"All user is fatched",
+//      users
+//    })
+//  } catch (error) {
+//   return res.status(500).json({
+//     success:false,
+//     message:"error while getting all the users"
 
-  })
+//   })
   
+//  }
+// }
+ export const getAllUsers= async(req,res)=>{
+  try {
+        const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments( );
+
+    const users = await User.find()
+       .skip(skip)
+      .limit(limit)
+      .select("-password");
+    console.log(users)
+    res.status(200).json({
+      success:true,
+      message:"users is fetched successfuly",
+      users,
+        pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    })
+    
+  } catch (error) {
+    return res.status(500).json({
+      success:false,
+      message:"error while fetching users"
+    })
+    
+  }
  }
-}
 export const getUserById = async (req, res) => {
     try {
         const { _id } = req.params;
@@ -359,7 +393,7 @@ export const addUser = async (req, res) => {
  
      const total = await User.countDocuments({$or:[{ accountType: "projectManager" },{accountType:"teamMember"}]});
  
-     const users = await User.find({ $or:[{accountType:'projectManager'},{accountType:'teamMember'}]})
+     const users = await User.find({ $or:[{accountType:'projectManager', active:'unblock'},{accountType:'teamMember',active:'unblock'}] }).select("-password");
      
      console.log(users)
      res.status(200).json({
@@ -387,12 +421,15 @@ export const addUser = async (req, res) => {
         })
       }
       const users = await User.findById(id);
-     
 
-      const user = await User.updateMany({ipAddress:users.ipAddress},{$set :{active:'block'}}, {
-        new: true,
-        runValidators: true,
-      })
+      if (!users) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      const user = await User.updateMany({ipAddress:users.ipAddress},{$set :{active:'block'}})
       if(!user){
         return res.status(400).json({
           success : false,
@@ -408,12 +445,12 @@ export const addUser = async (req, res) => {
     console.log(error)
     return res.status(500).json(
       { success:false,
-        message :'error while blocking the user'
+        message :'Server Error'
       }
-    
-      
+
+
     )
-    
+
   }
 
 
@@ -456,6 +493,41 @@ export const addUser = async (req, res) => {
 
 
   }
+ export const getBlockUser= async(req,res)=>{
+ try {
+       const page = parseInt(req.query.page) || 1;
+   const limit = parseInt(req.query.limit) || 5;
+
+   const skip = (page - 1) * limit;
+
+   const total = await User.countDocuments({ active: "block" });
+   console.log(total ,'sfd');
+
+   const users = await User.find({active:'block'})
+      .skip(skip)
+     .limit(limit)
+     .select("-password");
+   console.log(users);
+   res.status(200).json({
+     success:true,
+     message:"Block users fetched successfully",
+     users,
+       pagination: {
+       total,
+       page,
+       limit,
+       totalPages: Math.ceil(total / limit)
+     }
+   })
+
+ } catch (error) {
+   return res.status(500).json({
+     success:false,
+     message:" Server Error while fetching block users"
+   })
+
+ }
+}
 
   export const imageupload = async (req,res)=>{
     try {

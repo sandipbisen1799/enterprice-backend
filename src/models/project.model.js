@@ -17,9 +17,18 @@ const projectSchema = new mongoose.Schema(
     unique: true,
     uppercase: true
   },
-  startDate:Date,
-  endDate :Date,
-  
+  startDate:{type:Date,
+    required:true 
+  },
+ endDate: {
+  type: Date,
+  validate: {
+    validator: function (value) {
+      return !this.startDate || value >= this.startDate;
+    },
+    message: "End date must be after start date"
+  },
+},
   priority: {
     type: String,
     enum: ['low', 'medium', 'high'],
@@ -64,7 +73,11 @@ const projectSchema = new mongoose.Schema(
     type: Number,
     default: 0
   },
-
+tasks: [{
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Task"
+}]
+,
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -74,7 +87,7 @@ const projectSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "assigned", "completed"],
+      enum: ["pending", "assigned", "completed",'onhold'],
       default: "pending",
     },
       isArchived: {

@@ -279,3 +279,43 @@ export const updateTeamMember = async (req, res) => {
     })
   }
 }
+export const assignTeamMemberToProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { teamMemberId } = req.body;
+    if (!projectId || !teamMemberId) {
+      return res.status(400).json({ message: "Project ID and Team Member ID are required" });
+    }   
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(400).json({ message: "Project not found" });
+    }
+
+    if (project.projectManager.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You are not authorized to assign team members to this project" });
+    } 
+    const teamMember = await User.find
+      .findById(teamMemberId);
+    if (!teamMember || teamMember.accountType !== "teamMember") {
+      return res.status(400).json({ message: "Invalid team member" });
+    } 
+    if (teamMember.projectManager.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "This team member is not under your management" });
+    } 
+    if (!project.teamMember) {
+      project.teamMember = [];
+    }
+    if (project.teamMember.includes(teamMemberId)) {
+      return res.status(400).json({ message: "Team member already assigned to this project" });
+    }
+    project.teamMember.push(teamMemberId);
+    await project.save();
+    res.status(200).json({
+      success: true,
+      message: "Team member assigned to project successfully",
+      project,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

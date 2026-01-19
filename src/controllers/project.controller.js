@@ -1,5 +1,7 @@
 import Project from "../models/project.model.js";
 import User from "../models/user.model.js";
+import Task from "../models/task.model.js";
+import { calculateProgress } from "../services/auth/calculateProgress.js";
 import { generateProjectCode } from "../services/auth/generateProjectcode.js";
 
 export const createMyProject = async (req, res) => {
@@ -8,20 +10,32 @@ export const createMyProject = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { name, description } = req.body;
+    const { name, description, startDate,
+    endDate,
+    visibility,
+    priority,
+    budget } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: "Project name is required" });
 
     }
       const projectCode = await generateProjectCode();
+      const progress = calculateProgress(startDate, endDate);
 
 
     const project = await Project.create({
       name,
       description,
       createdBy: req.user._id,
-      projectCode,
+      projectCode, startDate,
+    endDate,
+    visibility,
+    priority,
+    budget,
+    progress,
+     status: progress === 100 ? "completed" : "pending",
+      createdBy: req.user._id,
     });
 
     res.status(201).json({
@@ -30,7 +44,8 @@ export const createMyProject = async (req, res) => {
       project,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.log(error);
+    res.status(500).json({ message: error });
   }
 };
 export const getProject = async (req,res)=>{
@@ -110,12 +125,10 @@ export const assignProjectManager = async (req, res) => {
 
     
     const project = await Project.findById(projectId);
-    if(project.
-projectManager
-){
+    if(project.projectManager){
   return res.status(400).json({
     success :false,
-    message:"cannot ressasign the same project to the deferent project manager"
+    message:"cannot reassign the same project to the different project manager"
   })
 }
 
@@ -214,4 +227,43 @@ export const  updateProject= async (req,res)=>{
     
 }
 
+
+
+export const createTask = async (req, res) => {
+  const { projectId } = req.params;
+ const { title, description, dueDate,priority,assignedTo } = req.body;
+
+  if (!title || !description || !dueDate) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  const task = await Task.create({
+    title,
+    description,
+    dueDate,
+    project: projectId,
+    createdBy: req.user._id
+  });
+
+  // optional: push task into project
+  await Project.findByIdAndUpdate(projectId, {
+    $push: { tasks: task._id }
+  });
+
+  res.status(201).json({
+    success: true,
+    task
+  });
+};
+export const assignTaskStatus = async (req, res) => {
+  const { taskId } = req.params;
+  const { assignedTo } = req.body;
+
+  const task = await Task.findByIdAndUpdate(
+    taskId,
+    { assignedTo },
+    { new: true }
+  );
+
+  res.json({ success: true, task });
+};
 
