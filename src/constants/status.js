@@ -1,0 +1,18 @@
+export const STATUS_CODES = {
+  SUCCESS: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+};
+
+export const MESSAGES = {
+  USER_CREATED: "User created successfully",
+  USER_EXISTS: "User already exists",
+  USER_NOT_FOUND: "User not found",
+  INVALID_CREDENTIALS: "Invalid email or password",
+  SERVER_ERROR: "Something went wrong",
+};

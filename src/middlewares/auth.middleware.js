@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import env from "../config/env.js";
 export const auth = async (req, res, next) => {
   let token;
   try {
@@ -17,7 +18,7 @@ export const auth = async (req, res, next) => {
         message: "token is missing while accessing  the token from the cookie",
       });
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, env.JWT_SECRET);
     req.user = decoded;
     console.log(req.user);
     next();

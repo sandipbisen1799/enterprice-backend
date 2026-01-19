@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, login, logout ,getAllUsers,getUserById,updateUser,deleteUser,getAllUserData,blockUser,unblockUser, addUser } from "../controllers/auth.controller.js";
+import { signup, login, logout ,getAllUsers,getUserById,updateUser,deleteUser,getAllUserData,blockUser,unblockUser, addUser,imageupload } from "../controllers/auth.controller.js";
 import {  createProjectManager,deleteProjectManager,updateProjectManager, getProjectmanagerbyId ,getProjectmanager } from "../controllers/admin.controller.js";
 import { auth } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/authorise.js";
@@ -7,10 +7,12 @@ import User from "../models/user.model.js";
 import { sendOTP } from "../utils/sendOtp.js";
 import {mailSender} from "../utils/nodeMailer.js"
 import { verifyOTP,resendotp } from "../controllers/otp.controller.js";
+import { validate } from "../middlewares/validate.middleware.js";
+import { registerSchema } from "../models/user.schema.js";
 const router = express.Router();
 
 router.post("/login", login);
-router.post("/signup",signup);
+router.post("/signup",validate(registerSchema),signup);
 router.post("/test",mailSender, sendOTP)
 router.post('/logout',logout);
 router.post('/resendotp',resendotp)
@@ -39,7 +41,7 @@ router.route('/admin/:projectManagerId')
 .delete(auth, authorize('admin'),deleteProjectManager)
 .put(auth, authorize('admin'),updateProjectManager);
 router.put('/blockuser/:id',auth, authorize('admin'), blockUser)
-router.put('/unblockuser/:id',auth, authorize('admin'), unblockUser)
+router.put('/unblockuser/:id',auth, authorize('admin'), unblockUser);
 
 
 export default router;

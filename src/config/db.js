@@ -1,14 +1,35 @@
 import mongoose from 'mongoose';
+ import env from './env.js';
 
-
-const connectwithdb = async () => {
+export const connectwithdb = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URL);
-    console.log('Connected to MongoDB');
-  } catch (err) {
-    console.error('Error connecting to MongoDB:', err);
-    throw err; // Ensure server doesn't start if DB connection fails
+    mongoose.connection.on('connected', () =>
+      console.log('MongoDB connected')
+    );
+
+    mongoose.connection.on('error', (err) =>
+      console.error('MongoDB error:', err)
+    );
+
+    mongoose.connection.on('disconnected', () =>
+      console.log('MongoDB disconnected')
+    );
+
+    await mongoose.connect(env.MONGODB_URL, {
+      autoIndex: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+  } catch (error) {
+    console.error('MongoDB connection failed:', error);
+    throw error;
   }
 };
 
-export default connectwithdb;
+
+export const closedb = async () => {
+  await mongoose.connection.close(false);
+};
+
+

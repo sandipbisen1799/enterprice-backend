@@ -3,13 +3,14 @@ import bcrypt from 'bcrypt'
 import { generateToken } from "../utils/jwt.js";
 
 
-export const createProjectManager = async (req,res)=>{try {
-  
-    const {userName, email ,password,}= req.body;
-    if(!userName ||!email || !password){
+export const createProjectManager = async (req,res)=>{
+  try {
+    const {userName,email,password}= req.body;
+    console.log(userName,email,password)
+    if(!userName || !email || !password){
       return res.status(400).json({
         success:false,
-        message:'all field are required'
+        message:'all field is required'
       })
      
     }

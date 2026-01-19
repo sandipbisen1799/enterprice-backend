@@ -1,10 +1,11 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/jwt.js";
-import { mailSender } from "../utils/nodeMailer.js";
+
 import OTP from "../models/otp.model.js";
 import otpGenerator from 'otp-generator'
 import nodemailer from 'nodemailer'
+
 export const signup = async (req, res) => {
   const { userName, email, accountType, password } = req.body;
 
@@ -101,6 +102,7 @@ export const signup = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      
     });
   }
 };
@@ -115,10 +117,11 @@ export const login = async (req, res) => {
       });
     }
     const user = await User.findOne({ email });
+    console.log(user)
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid user credentials",
       });
     }
 
@@ -133,7 +136,7 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: "Invalid credentials",
+        message: "Invalid password",
       });
     }
     console.log(user);
@@ -232,9 +235,26 @@ export const updateUser = async (req, res) => {
     console.log(_id);
     const {email,userName,password}=req.body;
     console.log(email,userName,password)
+        const updates = {};
+    Object.keys(req.body).forEach((key) => {
+      const value = req.body[key];
+      if (value !== "" && value !== null && value !== undefined) {
+        updates[key] = value;
+      }
+    });
+
+    // If nothing to update
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid fields provided for update"
+      });
+    }
+        const hashedPassword = await bcrypt.hash(updates.password, 10);
+        updates.password =hashedPassword;
  const updatedUser = await User.findByIdAndUpdate(
       _id,
-      req.body,                 // data coming from frontend
+      updates,                 // data coming from frontend
       {
         new: true,               // return updated document
         runValidators: true      // apply schema validation
@@ -288,14 +308,14 @@ export const deleteUser = async (req, res) => {
 export const addUser = async (req, res) => {
       try {
         const { userName, email, password,PhoneNumber, accountType, } = req.body;
-    
+
         if (!userName || !email || !password ) {
           return res.status(400).json({
             success: false,
             message: 'All fields are required',
           });
         }
-       
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -304,9 +324,10 @@ export const addUser = async (req, res) => {
             message: 'User already exists',
           });
         }
-    
-      
-        const user = new User({ userName,email, password, accountType,PhoneNumber });
+
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ userName,email, password: hashedPassword, accountType,PhoneNumber });
         await user.save();
     
 
@@ -317,7 +338,7 @@ export const addUser = async (req, res) => {
           user: {
             id: user._id,
             userName: user.userName,
-            PhoneNumber:user.PhoneNumber,
+            PhoneNumber:user.phoneNumber,
             email: user.email,
             accountType: user.accountType,
             token: user.token,
@@ -336,7 +357,7 @@ export const addUser = async (req, res) => {
    try {
    
  
-     const total = await User.countDocuments({$or:[{ accountType: "projectManager" },{accountType:"TeamMember"}]});
+     const total = await User.countDocuments({$or:[{ accountType: "projectManager" },{accountType:"teamMember"}]});
  
      const users = await User.find({ $or:[{accountType:'projectManager'},{accountType:'teamMember'}]})
      
@@ -425,7 +446,7 @@ export const addUser = async (req, res) => {
     console.log(error)
     return res.status(500).json(
       { success:false,
-        message :'error while blocking the user'
+        message :'error while unblocking the user'
       }
     
       
@@ -436,20 +457,32 @@ export const addUser = async (req, res) => {
 
   }
 
-   export const   verifyOtp =  async(req,res)=>{
+  export const imageupload = async (req,res)=>{
     try {
-      const {otp} =req.body;
-
- 
-    } catch (error) {
-      console.log(error);
-      return res.status (400).json({
-        success :false,
-        message :'error while verify the otp'
+      if(!req.file){
+        return res.status(400).json({
+          success:false,
+          message:'there is no file'
+        })
       }
-      )
+      const result = await uploadToCloudinary(
+        req.file.buffer,
+        'user_profile'
+      );
+       return res.status(200).json({
+        success:false,
+        message:'profilr uploaded successfuly'
+       })
+
+    } catch (error) {
+      return res.status(500).json({
+        success :false,
+        message:'error while uploading the image '
+      })
     }
   }
+
+
 
 
 

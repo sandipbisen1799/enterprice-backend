@@ -1,7 +1,37 @@
 import User from "../models/user.model.js";
 import Project from "../models/project.model.js";
 import mongoose from "mongoose";
-import { use } from "react";
+import bcrypt from 'bcrypt'
+export const getTeamMemeberById =async (req,res)=>{
+  try {
+    const {id}= req.params ;
+    console.log(id);
+    if(!id){
+      return res.status(500).json({
+        success:'false',
+        message:"id not found"
+      })
+    }
+    const user = await User.findById(id);
+    if(!user){
+      return res.status(400).json({
+        success:false,
+        message:"user is not found"
+      })
+    }
+    return res.status(200).json({
+      success:true,
+      message:'user is fetched',
+      user
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      success:false,
+      message:'error while getting teammemeber'
+    })
+  }
+}
 export const getMyTeamMembers = async (req, res) => {
   try {
     const projectManagerId = req.user._id;
@@ -49,7 +79,7 @@ export const getMyAssignedProjects = async (req, res) => {
         message: "Access denied",
       });
     }
-
+ console.log('dfbvsssssss',req.user._id)
     const projects = await Project.find({
       projectManager: req.user._id,
     })
@@ -154,13 +184,28 @@ export const updateTeamMember = async (req, res) => {
       });
     }
     console.log("vfddfdd", teamMemberId);
+        const updates = {};
+        Object.keys(req.body).forEach((key) => {
+          const value = req.body[key];
+          if (value !== "" && value !== null && value !== undefined) {
+            updates[key] = value;
+          }
+        });
+    
+        // If nothing to update
+        if (Object.keys(updates).length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: "No valid fields provided for update"
+          });
+        }
+        if(updates.password){
+            const hashedPassword = await bcrypt.hash(updates.password, 10);
+            updates.password =hashedPassword;
+        }
+            
     const updateduser = await User.findByIdAndUpdate(
-      teamMemberId,
-      {
-        userName,
-        email,
-        password,
-      },
+      teamMemberId,updates,
       {
         new: true,
         runValidators: true,

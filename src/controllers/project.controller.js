@@ -1,5 +1,6 @@
 import Project from "../models/project.model.js";
 import User from "../models/user.model.js";
+import { generateProjectCode } from "../services/auth/generateProjectcode.js";
 
 export const createMyProject = async (req, res) => {
   try {
@@ -11,12 +12,16 @@ export const createMyProject = async (req, res) => {
 
     if (!name) {
       return res.status(400).json({ message: "Project name is required" });
+
     }
+      const projectCode = await generateProjectCode();
+
 
     const project = await Project.create({
       name,
       description,
       createdBy: req.user._id,
+      projectCode,
     });
 
     res.status(201).json({

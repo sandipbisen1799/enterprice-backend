@@ -1,22 +1,22 @@
 import express from "express";
-import dotenv from "dotenv";
+import {errorMiddleware} from "./middlewares/error.middleware.js";
 import cors from "cors";
 import authRouter from "./routes/auth.route.js";
 import projectManager from './routes/projectmanager.route.js'
 import projects from './routes/project.route.js'
-import connectwithdb from "./config/db.js";
+
 import cookieparser from 'cookie-parser'
-dotenv.config();
+
 
 const app = express();
-const PORT =  8000;
 
-console.log(process.env.PORT)
 
-connectwithdb();
+
+
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+       origin: ["http://localhost:5173", "http://localhost:5174"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -33,6 +33,14 @@ app.use("/auth", authRouter);
 app.use("/projectmanager",projectManager);
 app.use('/projects',projects)
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.use((req, res) => {
+  console.log(`404 - Route not found: ${req.originalUrl}`);
+
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+
+  });
 });
+app.use(errorMiddleware)
+export default app ;

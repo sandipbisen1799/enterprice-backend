@@ -3,6 +3,6 @@ export const generateToken = (payload) => {
   return jwt.sign(
     payload,
     process.env.JWT_SECRET,
-    { expiresIn: "7d" } // token valid for 7 days
+    { expiresIn: "7d" } 
   );
 };

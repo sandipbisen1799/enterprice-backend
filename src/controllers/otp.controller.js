@@ -6,7 +6,7 @@ import otpGenerator from 'otp-generator'
 import nodemailer from 'nodemailer'
 export const resendotp = async (req,res)=>{
     try {
-        const {email,}= req.body; 
+        const {email}= req.body; 
          const otp = otpGenerator.generate(4, {
       upperCaseAlphabets: false,
       lowerCaseAlphabets: false,
