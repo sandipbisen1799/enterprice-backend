@@ -10,9 +10,8 @@ const env = {
     MAIL_PASS :process.env.MAIL_PASS ,
     MAIL_HOST :process.env.MAIL_HOST,
     CLOUDINARY_API_KEY : process.env.CLOUDINARY_API_KEY,
-    CLOUDINARY_CLOUD_NAME : process.env.CLOUDINARY_CLOUD_NAME
+    CLOUDINARY_CLOUD_NAME : process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_SECRET : process.env.CLOUDINARY_API_SECRET,
 }
-
-console.log('MONGODB_URL:', process.env.MONGODB_URL);
 
 export default env ;

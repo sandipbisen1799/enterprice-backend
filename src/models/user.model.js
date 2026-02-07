@@ -44,6 +44,9 @@ const userSchema = new mongoose.Schema(
 
   otp: String,
   otpExpiry: Date,
+  imageUrl: {
+    type: String,
+  },
 }
 
   ,

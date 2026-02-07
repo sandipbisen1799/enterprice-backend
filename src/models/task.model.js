@@ -38,9 +38,9 @@ const taskSchema = new mongoose.Schema({
   },
 
   estimatedHours: Number,
-  spentHours: {
-    type: Number,
-    default: 0
+  spentTime: {
+    type: String,
+    default: "0 days"
   },
 
   createdBy: {

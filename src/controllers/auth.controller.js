@@ -1,10 +1,11 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/jwt.js";
-
+import env from '../config/env.js';
 import OTP from "../models/otp.model.js";
 import otpGenerator from 'otp-generator'
-import nodemailer from 'nodemailer'
+
+import { mailSender } from "../utils/nodeMailer.js";
 
 export const signup = async (req, res) => {
   const { userName, email, accountType, password } = req.body;
@@ -35,25 +36,17 @@ export const signup = async (req, res) => {
     });
 
     
-        await OTP.create({ email, otp });
+    const otpResult =     await OTP.create({ email, otp });
+    if(!otpResult){
+      return res.status(400).json({
+        success:false,
+        message: 'error while creating  otp  in the database'
+      })
+    }
 
         // Send OTP via email (replace with your email sending logic)
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: 'sandipbisen1799@gmail.com',
-                pass: 'cqyictnbcivtfsvk'
-            }
-        });
-
-
-        await transporter.sendMail({
-            from: 'your-mail@gmail.com',
-            to: email,
-            subject: 'OTP Verification',
-            text: `Your OTP for verification is: ${otp}`
-        });
-
+  const result =  mailSender(email, otp);
+  console.log(result);
 
     const user = await User.create({
       userName,
@@ -63,10 +56,10 @@ export const signup = async (req, res) => {
       ipAddress : req.ip
       
     });
-    const token = generateToken({
-      _id: user._id,
-      accountType: user.accountType,
-    });
+      const token = generateToken({
+        _id: user._id,
+        accountType: user.accountType,
+      });
     console.log(token);
     console.log( `the ip address is ${req.ip}`)
 
@@ -180,24 +173,24 @@ export const logout =  async(req, res) => {
   });
 };
 
-// export const getAllUservs= async(req,res)=>{
-//  try {
-//    const users= await User.find();
-//    console.log(users) ;
-//    return res.status(200).json({
-//      success:true,
-//      message:"All user is fatched",
-//      users
-//    })
-//  } catch (error) {
-//   return res.status(500).json({
-//     success:false,
-//     message:"error while getting all the users"
+export const getAllUser= async(req,res)=>{
+ try {
+   const users= await User.find();
+   console.log(users) ;
+   return res.status(200).json({
+     success:true,
+     message:"All user is fatched",
+     users
+   })
+ } catch (error) {
+  return res.status(500).json({
+    success:false,
+    message:"error while getting all the users"
 
-//   })
+  })
   
-//  }
-// }
+ }
+}
  export const getAllUsers= async(req,res)=>{
   try {
         const page = parseInt(req.query.page) || 1;
@@ -543,7 +536,7 @@ export const addUser = async (req, res) => {
       );
        return res.status(200).json({
         success:false,
-        message:'profilr uploaded successfuly'
+        message:'profile uploaded successfuly'
        })
 
     } catch (error) {
@@ -555,6 +548,135 @@ export const addUser = async (req, res) => {
   }
 
 
+export const uploadImage = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // ✅ CORRECT
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    const result = await uploadToCloudinary(
+      file.buffer,          // ✅ correct
+      "user_profile"
+    );
+
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { imageUrl: result.secure_url },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile image uploaded successfully",
+      url: result.secure_url,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error while uploading image",
+    });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { userName, phoneNumber } = req.body;
+    const updates = {};
+    if (userName !== undefined) updates.userName = userName;
+    if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+    const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.status(200).json({ success: true, message: "Profile updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const { priviouspassword
+, password } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (!priviouspassword
+) {
+      return res.status(400).json({
+        success: false,
+        message: "Previous password is required",
+      });
+    }
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "New password is required",
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(priviouspassword
+, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Previous password is incorrect",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error while changing password",
+    });
+  }
+};
 
 
 

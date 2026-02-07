@@ -267,3 +267,54 @@ export const assignTaskStatus = async (req, res) => {
   res.json({ success: true, task });
 };
 
+export const getTask = async (req, res) => {
+try {
+    const { taskId } = req.params;
+    const task = await Task.findById(taskId);
+    const spentTime = Math.abs(new Date() - new Date(task.createdAt));
+   task.spentTime =`${ Math.floor(spentTime / (1000 * 60 * 60 * 24))} days`; // in days
+    await task.save();
+    res.json({ success: true, task });
+} catch (error) {
+  console.log(error);
+  res.status(500).json({ success: false, message: "Error fetching task" });
+
+  
+}
+};
+export const deleteTask = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const deletedTask = await Task.findByIdAndDelete(taskId);
+
+    if (!deletedTask) {
+      return res.status(404).json({ success: false, message: "Task not found" });
+    }   
+    res.json({ success: true, message: "Task deleted successfully" });
+  }
+    catch (error) {
+
+    console.log(error);
+    res.status(500).json({ success: false, message: "Error deleting task" });
+  } 
+};
+export const getAllTasks = async (req,res)=>{
+  try {
+    const {projectId} = req.params;
+    const tasks = await Task.find({project:projectId});
+    if(!tasks){
+      return res.status(400).json({
+        success:false,
+        message:"tasks not found"
+      })
+    }
+    res.status(200).json({
+      success:true,
+      message:"tasks fetched successfully",
+      tasks
+    })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Error fetching tasks" });
+  }
+}

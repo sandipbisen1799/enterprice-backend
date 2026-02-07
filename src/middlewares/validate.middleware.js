@@ -9,6 +9,7 @@ export const validate = (schema) => (req, res, next) => {
     });
     next();
   } catch (err) {
+    console.log(err);
     if (err instanceof ZodError) {
       return res.status(400).json({
         success: false,

@@ -4,7 +4,7 @@ import cors from "cors";
 import authRouter from "./routes/auth.route.js";
 import projectManager from './routes/projectmanager.route.js'
 import projects from './routes/project.route.js'
-
+import otp from './routes/otp.route.js'
 import cookieparser from 'cookie-parser'
 
 
@@ -32,6 +32,7 @@ app.use(cookieparser());
 app.use("/auth", authRouter);
 app.use("/projectmanager",projectManager);
 app.use('/projects',projects)
+app.use('/otp',otp);
 
 app.use((req, res) => {
   console.log(`404 - Route not found: ${req.originalUrl}`);
